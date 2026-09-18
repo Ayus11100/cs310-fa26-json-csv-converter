@@ -78,7 +78,49 @@ public class Converter {
         
         try {
         
-            // INSERT YOUR CODE HERE
+            
+            CSVReader reader = new CSVReader(new java.io.StringReader(csvString));
+
+            java.util.List<String[]> rows = reader.readAll();
+
+            String[] headings = rows.get(0);
+
+            JsonObject json = new JsonObject();
+
+            JsonArray prodNums = new JsonArray();
+            JsonArray colHeadings = new JsonArray();
+            JsonArray data = new JsonArray();
+
+            for (String heading : headings) {
+                colHeadings.add(heading);
+            }
+
+            for (int i = 1; i < rows.size(); i++) {
+                String[] row = rows.get(i);
+
+                prodNums.add(row[0]);
+
+                JsonArray dataRow = new JsonArray();
+
+                for (int j = 1; j < row.length; j++) {
+                    if (j == 2 || j == 3) {
+                        dataRow.add(Integer.parseInt(row[j]));
+                    }
+                    else {
+                        dataRow.add(row[j]);
+                    }
+                }
+
+                data.add(dataRow);
+            }
+
+            json.put("ProdNums", prodNums);
+            json.put("ColHeadings", colHeadings);
+            json.put("Data", data);
+
+            result = Jsoner.serialize(json);
+
+            reader.close();
             
         }
         catch (Exception e) {
@@ -95,10 +137,60 @@ public class Converter {
         String result = ""; // default return value; replace later!
         
         try {
-            
-            // INSERT YOUR CODE HERE
-            
+        
+            JsonObject json = Jsoner.deserialize(jsonString, new JsonObject());
+
+            JsonArray prodNums = (JsonArray) json.get("ProdNums");
+            JsonArray colHeadings = (JsonArray) json.get("ColHeadings");
+            JsonArray data = (JsonArray) json.get("Data");
+
+            java.util.List<String[]> rows = new java.util.ArrayList<>();
+
+            String[] headings = new String[colHeadings.size()];
+
+            for (int i = 0; i < colHeadings.size(); i++) {
+                headings[i] = (String) colHeadings.get(i);
+            }
+
+            rows.add(headings);
+
+            for (int i = 0; i < data.size(); i++) {
+
+                JsonArray dataRow = (JsonArray) data.get(i);
+
+                String[] row = new String[dataRow.size() + 1];
+
+                row[0] = (String) prodNums.get(i);
+
+                for (int j = 0; j < dataRow.size(); j++) {
+
+                    Object value = dataRow.get(j);
+
+                    if (j == 1) {
+                        row[j + 1] = String.valueOf(((Number) value).intValue());
+                    }
+                    else if (j == 2) {
+                        row[j + 1] = String.format("%02d", ((Number) value).intValue());
+                    }
+                    else {
+                        row[j + 1] = (String) value;
+                    }
+                }
+
+                rows.add(row);
+            }
+
+            java.io.StringWriter stringWriter = new java.io.StringWriter();
+
+            CSVWriter writer = new CSVWriter(stringWriter);
+
+            writer.writeAll(rows);
+            writer.close();
+
+            result = stringWriter.toString();
+        
         }
+
         catch (Exception e) {
             e.printStackTrace();
         }
